@@ -1,0 +1,32 @@
+name: Update Weather Data
+
+on:
+  schedule:
+    - cron: '15 * * * *' # 매시 15분마다 실행 (한국 시간 기준)
+  workflow_dispatch: # 수동 실행 버튼 활성화
+
+jobs:
+  update-weather:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Run Weather Script
+      run: python update_weather.py
+        
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add weather_data.json
+        git commit -m "Update weather data automatically" || echo "No changes to commit"
+        git push
