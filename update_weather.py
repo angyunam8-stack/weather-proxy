@@ -1,7 +1,7 @@
 import urllib.request
 import json
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import concurrent.futures
 
 def dfs_xy_conv(lat, lon):
@@ -58,7 +58,8 @@ def main():
         nx, ny = dfs_xy_conv(s['lat'], s['lon'])
         unique_grids.add((nx, ny))
 
-    now = datetime.now()
+    # GitHub Actions는 영국(UTC) 기준이므로 한국(KST, +9시간) 시간으로 변환
+    now = datetime.now(timezone.utc) + timedelta(hours=9)
     if now.minute < 45:
         now -= timedelta(hours=1)
     
@@ -69,7 +70,7 @@ def main():
     weather_data = {}
     
     tasks = [(nx, ny, b_date, ncst_time, fcst_time) for nx, ny in unique_grids]
-    print(f"총 {len(tasks)}개의 그리드를 업데이트합니다...", flush=True)
+    print(f"총 {len(tasks)}개의 그리드를 업데이트합니다... (기준: {b_date} {ncst_time})", flush=True)
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         results = executor.map(fetch_grid, tasks)
