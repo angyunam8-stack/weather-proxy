@@ -2,6 +2,7 @@ import urllib.request
 import json
 import math
 from datetime import datetime, timedelta
+import concurrent.futures
 
 def dfs_xy_conv(lat, lon):
     RE = 6371.00877; GRID = 5.0; SLAT1 = 30.0; SLAT2 = 60.0; OLON = 126.0; OLAT = 38.0; XO = 43; YO = 136
@@ -29,14 +30,27 @@ def fetch_data(url):
         res = urllib.request.urlopen(req, timeout=10)
         return json.loads(res.read().decode('utf-8'))
     except Exception as e:
+        print(f"Error fetching: {e}", flush=True)
         return None
+
+def fetch_grid(args):
+    nx, ny, b_date, ncst_time, fcst_time = args
+    grid_key = f"{nx}_{ny}"
+    ncst_url = f"http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=10&dataType=JSON&base_date={b_date}&base_time={ncst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
+    fcst_url = f"http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=50&dataType=JSON&base_date={b_date}&base_time={fcst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
+    
+    ncst_data = fetch_data(ncst_url)
+    fcst_data = fetch_data(fcst_url)
+    
+    print(f"Fetched {grid_key}", flush=True)
+    return grid_key, {"ncst": ncst_data, "fcst": fcst_data}
 
 def main():
     try:
         with open('stations.json', 'r', encoding='utf-8') as f:
             stations = json.load(f)
     except FileNotFoundError:
-        print("stations.json 파일을 찾을 수 없습니다.")
+        print("stations.json 파일을 찾을 수 없습니다.", flush=True)
         return
 
     unique_grids = set()
@@ -53,24 +67,18 @@ def main():
     fcst_time = now.strftime('%H30')
 
     weather_data = {}
-
-    for nx, ny in unique_grids:
-        grid_key = f"{nx}_{ny}"
-        print(f"Fetching {grid_key}...")
-        ncst_url = f"http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=10&dataType=JSON&base_date={b_date}&base_time={ncst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
-        fcst_url = f"http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=50&dataType=JSON&base_date={b_date}&base_time={fcst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
-        
-        ncst_data = fetch_data(ncst_url)
-        fcst_data = fetch_data(fcst_url)
-        
-        weather_data[grid_key] = {
-            "ncst": ncst_data,
-            "fcst": fcst_data
-        }
+    
+    tasks = [(nx, ny, b_date, ncst_time, fcst_time) for nx, ny in unique_grids]
+    print(f"총 {len(tasks)}개의 그리드를 업데이트합니다...", flush=True)
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        results = executor.map(fetch_grid, tasks)
+        for grid_key, data in results:
+            weather_data[grid_key] = data
 
     with open('weather_data.json', 'w', encoding='utf-8') as f:
         json.dump(weather_data, f, ensure_ascii=False)
-    print("Successfully updated weather_data.json!")
+    print("Successfully updated weather_data.json!", flush=True)
 
 if __name__ == '__main__':
     main()
