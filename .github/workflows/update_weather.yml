@@ -2,10 +2,10 @@ name: Update Weather Data
 
 on:
   schedule:
-    # GitHub 무료 서버는 트래픽이 많을 때 스케줄을 종종 무시(Drop)합니다. (특히 매시 정각 등)
-    # 따라서 1시간에 1번이 아닌 4번(45분, 55분, 05분, 15분) 시도하도록 강력하게 설정합니다.
-    # 내용이 똑같으면 git commit이 취소되므로 커밋이 지저분해지지 않습니다.
-    - cron: '45,55,05,15 * * * *' 
+    # GitHub 무료 서버는 트래픽이 많을 때 스케줄을 종종 무시(Drop)합니다.
+    # 1시간에 4번(45분, 55분, 05분, 15분) 시도하여 안정성을 높입니다.
+    # 날씨가 변하지 않으면 git commit이 취소되므로 지저분해지지 않습니다.
+    - cron: '45,55,05,15 * * * *'
   workflow_dispatch: # 수동 실행 버튼 활성화
 
 jobs:
@@ -30,9 +30,9 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add weather_data.json
-        git commit -m "Update weather data automatically" || echo "No changes to commit"
+        # 60일 방치 방지: 날씨 JSON과 함께 현재 날짜를 기록해 항상 변경사항이 생기게 함
+        echo "Last updated: $(date -u '+%Y-%m-%d %H:%M:%S') UTC" > last_updated.txt
+        git add weather_data.json last_updated.txt
+        git commit -m "Update weather data $(date -u '+%Y-%m-%d %H:%M') UTC" || echo "No changes to commit"
         git push
-        
-    - name: Keepalive Workflow (방치 60일 경과시 자동 중지 방지)
-      uses: gautamkrishnar/keepalive-workflow@v2
+
