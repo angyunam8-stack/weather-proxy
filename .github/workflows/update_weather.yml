@@ -2,7 +2,10 @@ name: Update Weather Data
 
 on:
   schedule:
-    - cron: '15 * * * *' # 매시 15분마다 실행 (한국 시간 기준)
+    # GitHub 무료 서버는 트래픽이 많을 때 스케줄을 종종 무시(Drop)합니다. (특히 매시 정각 등)
+    # 따라서 1시간에 1번이 아닌 4번(45분, 55분, 05분, 15분) 시도하도록 강력하게 설정합니다.
+    # 내용이 똑같으면 git commit이 취소되므로 커밋이 지저분해지지 않습니다.
+    - cron: '45,55,05,15 * * * *' 
   workflow_dispatch: # 수동 실행 버튼 활성화
 
 jobs:
@@ -30,3 +33,6 @@ jobs:
         git add weather_data.json
         git commit -m "Update weather data automatically" || echo "No changes to commit"
         git push
+        
+    - name: Keepalive Workflow (방치 60일 경과시 자동 중지 방지)
+      uses: gautamkrishnar/keepalive-workflow@v2
