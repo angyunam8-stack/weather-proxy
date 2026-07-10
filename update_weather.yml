@@ -1,0 +1,37 @@
+name: Update Weather Data
+
+on:
+  schedule:
+    # GitHub 무료 서버는 트래픽이 많을 때 스케줄을 종종 무시(Drop)합니다.
+    # 1시간에 4번(45분, 55분, 05분, 15분) 시도하여 안정성을 높입니다.
+    # 날씨가 변하지 않으면 git commit이 취소되므로 지저분해지지 않습니다.
+    - cron: '45,55,05,15 * * * *'
+  workflow_dispatch: # 수동 실행 버튼 활성화
+
+jobs:
+  update-weather:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Run Weather Script
+      run: python update_weather.py
+        
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        # 60일 방치 방지: 날씨 JSON과 함께 현재 날짜를 기록해 항상 변경사항이 생기게 함
+        echo "Last updated: $(date -u '+%Y-%m-%d %H:%M:%S') UTC" > last_updated.txt
+        git add weather_data.json last_updated.txt
+        git commit -m "Update weather data $(date -u '+%Y-%m-%d %H:%M') UTC" || echo "No changes to commit"
+        git push
