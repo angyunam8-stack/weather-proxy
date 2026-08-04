@@ -36,8 +36,8 @@ def fetch_data(url):
 def fetch_grid(args):
     nx, ny, b_date, ncst_time, fcst_time = args
     grid_key = f"{nx}_{ny}"
-    ncst_url = f"http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=10&dataType=JSON&base_date={b_date}&base_time={ncst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
-    fcst_url = f"http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=50&dataType=JSON&base_date={b_date}&base_time={fcst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
+    ncst_url = f"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?pageNo=1&numOfRows=10&dataType=JSON&base_date={b_date}&base_time={ncst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
+    fcst_url = f"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst?pageNo=1&numOfRows=50&dataType=JSON&base_date={b_date}&base_time={fcst_time}&nx={nx}&ny={ny}&serviceKey={PUB_KEY}"
     
     ncst_data = fetch_data(ncst_url)
     fcst_data = fetch_data(fcst_url)
